@@ -66,27 +66,29 @@ echo "TIMEZONE=${TIMEZONE}" >> /mnt/etc/rc.conf
 echo "KEYMAP=${KEYMAP}" >> /mnt/etc/rc.conf
 echo "TTYS=2" >> /mnt/etc/rc.conf
 
-
 echo "LANG=$LANG" > /mnt/etc/locale.conf
 echo "$LANG $(echo ${LANG} | cut -f 2 -d .)" >> /mnt/etc/default/libc-locales
 chroot /mnt xbps-reconfigure -f glibc-locales
 
-FSTAB="/mnt/etc/fstab"
-echo "LABEL=root    /	ext4	rw,relatime,data=ordered,discard	0 0" >> $FSTAB
-echo "LABEL=boot    /boot	ext4	rw,relatime,data=ordered,discard	0 0" >> $FSTAB
-echo "LABEL=var /var	ext4	rw,relatime,data=ordered,discard	0 0" >> $FSTAB
-echo "LABEL=home    /home	ext4	rw,relatime,data=ordered,discard	0 0" >> $FSTAB
-echo "/dev/sda1 /boot/efi	vfat	defaults	0 0" >> $FSTAB
-echo "tmpfs     /tmp	tmpfs	size=1G,noexec,nodev,nosuid	0 0" >> $FSTAB
+# Add fstab entries
+cat << EOF >> /mnt/etc/fstab
+LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0
+LABEL=boot  /boot	ext4    rw,relatime,data=ordered,discard    0 0
+LABEL=var   /var	ext4    rw,relatime,data=ordered,discard    0 0
+LABEL=home  /home	ext4    rw,relatime,data=ordered,discard    0 0
+/dev/sda1   /boot/efi   vfat    defaults    0 0
+tmpfs       /tmp    tmpfs   size=1G,noexec,nodev,nosuid     0 0
+EOF
 
+# Link /var/tmp > /tmp
 rm -rf /mnt/var/tmp
 ln -s /tmp /mnt/var/tmp
 
+# Install grub
 chroot /mnt grub-install /dev/sda
 
 # Now tune the cryptsetup
 KERNEL_VER=$(xbps-query -r /mnt -s linux4 | cut -f 2 -d ' ' | cut -f 1 -d -)
-echo "KERNEL_VER IS ${KERNEL_VER}"
 
 echo -e "crypt-pool\t/dev/sda3\tnone\tluks" > /mnt/etc/crypttab
 mkdir -p /mnt/etc/dracut.conf.d/
