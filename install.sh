@@ -6,6 +6,8 @@ HOSTNAME="dom1.internal"
 KEYMAP="fr_CH"
 TIMEZONE="Europe/Zurich"
 LANG="en_US.UTF-8"
+CRYPTDEVNAME="crypt-pool"
+VGNAME="vgpool"
 
 
 # Install requirements
@@ -21,30 +23,30 @@ parted /dev/sda set 1 boot on
 
 # Encrypt /dev/sda3 partition
 cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/sda3
-cryptsetup luksOpen /dev/sda3 crypt-pool
+cryptsetup luksOpen /dev/sda3 ${CRYPTDEVNAME}
 
 # Now create VG
-pvcreate /dev/mapper/crypt-pool
-vgcreate vgpool /dev/mapper/crypt-pool
-lvcreate -L 10G -n root vgpool
-lvcreate -L 5G -n var vgpool
-lvcreate -L 512M -n home vgpool
+pvcreate /dev/mapper/${CRYPTDEVNAME}
+vgcreate ${VGNAME} /dev/mapper/${CRYPTDEVNAME}
+lvcreate -L 10G -n root ${VGNAME}
+lvcreate -L 5G -n var ${VGNAME}
+lvcreate -L 512M -n home ${VGNAME}
 
 # Format filesystems
 mkfs.vfat /dev/sda1
 mkfs.ext4 -L boot /dev/sda2
-mkfs.ext4 -L root /dev/mapper/vgpool-root
-mkfs.ext4 -L var /dev/mapper/vgpool-var
-mkfs.ext4 -L home /dev/mapper/vgpool-home
+mkfs.ext4 -L root /dev/mapper/${VGNAME}-root
+mkfs.ext4 -L var /dev/mapper/${VGNAME}-var
+mkfs.ext4 -L home /dev/mapper/${VGNAME}-home
 
 # Mount them
-mount /dev/mapper/vgpool-root /mnt
+mount /dev/mapper/${VGNAME}-root /mnt
 for dir in dev proc sys boot home var; do
   mkdir /mnt/${dir}
 done
 
-mount /dev/mapper/vgpool-home /mnt/home
-mount /dev/mapper/vgpool-var /mnt/var
+mount /dev/mapper/${VGNAME}-home /mnt/home
+mount /dev/mapper/${VGNAME}-var /mnt/var
 
 mount /dev/sda2 /mnt/boot
 mkdir /mnt/boot/efi
@@ -90,13 +92,13 @@ chroot /mnt grub-install /dev/sda
 # Now tune the cryptsetup
 KERNEL_VER=$(xbps-query -r /mnt -s linux4 | cut -f 2 -d ' ' | cut -f 1 -d -)
 
-echo -e "crypt-pool\t/dev/sda3\tnone\tluks" > /mnt/etc/crypttab
+echo -e "${CRYPTDEVNAME}\t/dev/sda3\tnone\tluks" > /mnt/etc/crypttab
 mkdir -p /mnt/etc/dracut.conf.d/
 echo 'install_items+="/etc/crypttab"' > /mnt/etc/dracut.conf.d/00-crypttab.conf
 echo 'hostonly=yes' > /mnt/etc/dracut.conf.d/00-hostonly.conf
 
 echo 'GRUB_CRYPTODISK_ENABLE=y' >> /mnt/etc/default/grub
-echo "GRUB_CMDLINE_LINUX=\"rd.auto=1 rd.vconsole.keymap=${KEYMAP} cryptsetup=/dev/sda3:crypt-pool\"" >> /mnt/etc/default/grub
+echo "GRUB_CMDLINE_LINUX=\"rd.auto=1 rd.vconsole.keymap=${KEYMAP} cryptsetup=/dev/sda3:${CRYPTDEVNAME}\"" >> /mnt/etc/default/grub
 
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 chroot /mnt xbps-reconfigure -f ${KERNEL_VER}
