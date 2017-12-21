@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PKG_LIST="base-system lvm2 cryptsetup grub-x86_64-efi efibootmgr vim"
+PKG_LIST="base-system lvm2 cryptsetup grub vim"
 HOSTNAME="dom1.internal"
 KEYMAP="fr_CH"
 TIMEZONE="Europe/Zurich"
@@ -9,21 +9,37 @@ LANG="en_US.UTF-8"
 CRYPTDEVNAME="crypt-pool"
 VGNAME="vgpool"
 
+# Detect if we're in UEFI or legacy mode
+[ -d /sys/firmware/efi ] && UEFI=1
+if [ $UEFI ]; then
+  PKG_LIST="$PKG_LIST grub-x86_64-efi efibootmgr"
+fi
 
 # Install requirements
 xbps-install -y -S -f cryptsetup parted lvm2
 
 # Wipe /dev/sda
 dd if=/dev/zero of=/dev/sda bs=1M count=100
-parted /dev/sda mklabel gpt
-parted -a optimal /dev/sda mkpart primary 2048s 100M
-parted -a optimal /dev/sda mkpart primary 100M 1100M
-parted -a optimal /dev/sda mkpart primary 1100M 100%
+if [ $UEFI ]; then
+  parted /dev/sda mklabel gpt
+  parted -a optimal /dev/sda mkpart primary 2048s 100M
+  parted -a optimal /dev/sda mkpart primary 100M 1100M
+  parted -a optimal /dev/sda mkpart primary 1100M 100%
+else
+  parted /dev/sda mklabel msdos
+  parted -a optimal /dev/sda mkpart primary 2048s 1G
+  parted -a optimal /dev/sda mkpart primary 1G 100%
+fi
 parted /dev/sda set 1 boot on
 
-# Encrypt /dev/sda3 partition
-cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/sda3
-cryptsetup luksOpen /dev/sda3 ${CRYPTDEVNAME}
+# Encrypt /dev/sdaX partition
+if [ $UEFI ]; then
+  DEVPART="3"
+else
+  DEVPART="2"
+fi
+cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/sda${DEVPART}
+cryptsetup luksOpen /dev/sda${DEVPART} ${CRYPTDEVNAME}
 
 # Now create VG
 pvcreate /dev/mapper/${CRYPTDEVNAME}
@@ -33,8 +49,12 @@ lvcreate -L 5G -n var ${VGNAME}
 lvcreate -L 512M -n home ${VGNAME}
 
 # Format filesystems
-mkfs.vfat /dev/sda1
-mkfs.ext4 -L boot /dev/sda2
+if [ $UEFI ]; then
+  mkfs.vfat /dev/sda1
+  mkfs.ext4 -L boot /dev/sda2
+else
+  mkfs.ext4 -L boot /dev/sda1
+fi
 mkfs.ext4 -L root /dev/mapper/${VGNAME}-root
 mkfs.ext4 -L var /dev/mapper/${VGNAME}-var
 mkfs.ext4 -L home /dev/mapper/${VGNAME}-home
@@ -48,10 +68,13 @@ done
 mount /dev/mapper/${VGNAME}-home /mnt/home
 mount /dev/mapper/${VGNAME}-var /mnt/var
 
-mount /dev/sda2 /mnt/boot
-mkdir /mnt/boot/efi
-
-mount /dev/sda1 /mnt/boot/efi
+if [ $UEFI ]; then
+  mount /dev/sda2 /mnt/boot
+  mkdir /mnt/boot/efi
+  mount /dev/sda1 /mnt/boot/efi
+else
+  mount /dev/sda1 /mnt/boot
+fi
 
 for fs in dev proc sys; do
   mount -o bind /${fs} /mnt/${fs}
@@ -78,9 +101,12 @@ LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0
 LABEL=boot  /boot	ext4    rw,relatime,data=ordered,discard    0 0
 LABEL=var   /var	ext4    rw,relatime,data=ordered,discard    0 0
 LABEL=home  /home	ext4    rw,relatime,data=ordered,discard    0 0
-/dev/sda1   /boot/efi   vfat    defaults    0 0
 tmpfs       /tmp    tmpfs   size=1G,noexec,nodev,nosuid     0 0
 EOF
+
+if [ $UEFI ]; then
+  echo "/dev/sda1   /boot/efi   vfat    defaults    0 0" >> /mnt/etc/fstab
+fi
 
 # Link /var/tmp > /tmp
 rm -rf /mnt/var/tmp
