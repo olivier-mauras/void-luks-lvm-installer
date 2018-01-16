@@ -118,13 +118,13 @@ chroot /mnt grub-install /dev/sda
 # Now tune the cryptsetup
 KERNEL_VER=$(xbps-query -r /mnt -s linux4 | cut -f 2 -d ' ' | cut -f 1 -d -)
 
-echo "${CRYPTDEVNAME}    /dev/sda3    none    luks" > /mnt/etc/crypttab
+echo "${CRYPTDEVNAME}    /dev/sda${DEVPART}    none    luks" > /mnt/etc/crypttab
 mkdir -p /mnt/etc/dracut.conf.d/
 echo 'install_items+="/etc/crypttab"' > /mnt/etc/dracut.conf.d/00-crypttab.conf
 echo 'hostonly=yes' > /mnt/etc/dracut.conf.d/00-hostonly.conf
 
 echo 'GRUB_CRYPTODISK_ENABLE=y' >> /mnt/etc/default/grub
-echo "GRUB_CMDLINE_LINUX=\"rd.auto=1 rd.vconsole.keymap=${KEYMAP} cryptsetup=/dev/sda3:${CRYPTDEVNAME}\"" >> /mnt/etc/default/grub
+echo "GRUB_CMDLINE_LINUX=\"rd.auto=1 rd.vconsole.keymap=${KEYMAP} cryptsetup=/dev/sda${DEVPART}:${CRYPTDEVNAME}\"" >> /mnt/etc/default/grub
 
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 chroot /mnt xbps-reconfigure -f ${KERNEL_VER}
