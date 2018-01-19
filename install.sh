@@ -140,3 +140,15 @@ echo "GRUB_CMDLINE_LINUX=\"rd.vconsole.keymap=${KEYMAP} rd.lvm=1 rd.luks=1 rd.lu
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 chroot /mnt xbps-reconfigure -f ${KERNEL_VER}
 
+# Now add customization to installation
+if [ -d ./custom ]; then
+  cp -r ./custom /mnt/tmp
+
+  # If we detect any .sh let's run them in the chroot
+  for SHFILE in /mnt/tmp/*.sh; do
+    chroot /mnt sh /tmp/$(basename $SHFILE)
+  done
+
+  # Then cleanup chroot
+  rm -rf /mnt/tmp/custom
+fi
