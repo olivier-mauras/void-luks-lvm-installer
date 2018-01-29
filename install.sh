@@ -49,7 +49,7 @@ vgcreate ${VGNAME} /dev/mapper/${CRYPTDEVNAME}
 lvcreate -L 10G -n root ${VGNAME}
 lvcreate -L 5G -n var ${VGNAME}
 lvcreate -L 512M -n home ${VGNAME}
-if [ $SWAP ]; then
+if [ $SWAP -eq 1 ]; then
   lvcreate -L ${SWAPSIZE} -n swap ${VGNAME}
 fi
 
@@ -63,7 +63,7 @@ fi
 mkfs.ext4 -L root /dev/mapper/${VGNAME}-root
 mkfs.ext4 -L var /dev/mapper/${VGNAME}-var
 mkfs.ext4 -L home /dev/mapper/${VGNAME}-home
-if [ $SWAP ]; then
+if [ $SWAP -eq 1 ]; then
   mkswap -L swap /dev/mapper/${VGNAME}-swap
 fi
 
@@ -117,7 +117,7 @@ if [ $UEFI ]; then
   echo "/dev/sda1   /boot/efi   vfat    defaults    0 0" >> /mnt/etc/fstab
 fi
 
-if [ $SWAP ]; then
+if [ $SWAP -eq 1 ]; then
   echo "LABEL=swap  none       swap     defaults    0 0" >> /mnt/etc/fstab
 fi
 
