@@ -158,8 +158,8 @@ if [ -d ./custom ]; then
   cp -r ./custom /mnt/tmp
 
   # If we detect any .sh let's run them in the chroot
-  for SHFILE in /mnt/tmp/*.sh; do
-    chroot /mnt sh /tmp/$(basename $SHFILE)
+  for SHFILE in /mnt/tmp/custom/*.sh; do
+    chroot /mnt sh /tmp/custom/$(basename $SHFILE)
   done
 
   # Then cleanup chroot
