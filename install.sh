@@ -34,12 +34,20 @@ else
 fi
 parted /dev/sda set 1 boot on
 
-# Encrypt /dev/sdaX partition
+# Encrypt partitions
 if [ $UEFI ]; then
+  BOOTPART="2"
   DEVPART="3"
 else
+  BOOTPART="1"
   DEVPART="2"
 fi
+
+echo "Encrypt /boot partition"
+cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/sda${BOOTPART}
+cryptsetup luksOpen /dev/sda${BOOTPART} crypt-boot
+
+echo "Encrypt data partition"
 cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/sda${DEVPART}
 cryptsetup luksOpen /dev/sda${DEVPART} ${CRYPTDEVNAME}
 
@@ -56,10 +64,8 @@ fi
 # Format filesystems
 if [ $UEFI ]; then
   mkfs.vfat /dev/sda1
-  mkfs.ext4 -L boot /dev/sda2
-else
-  mkfs.ext4 -L boot /dev/sda1
 fi
+mkfs.ext4 -L boot /dev/mapper/crypt-boot
 mkfs.ext4 -L root /dev/mapper/${VGNAME}-root
 mkfs.ext4 -L var /dev/mapper/${VGNAME}-var
 mkfs.ext4 -L home /dev/mapper/${VGNAME}-home
@@ -78,11 +84,11 @@ mount /dev/mapper/${VGNAME}-home /mnt/home
 mount /dev/mapper/${VGNAME}-var /mnt/var
 
 if [ $UEFI ]; then
-  mount /dev/sda2 /mnt/boot
+  mount /dev/mapper/crypt-boot /mnt/boot
   mkdir /mnt/boot/efi
   mount /dev/sda1 /mnt/boot/efi
 else
-  mount /dev/sda1 /mnt/boot
+  mount /dev/mapper/crypt-boot /mnt/boot
 fi
 
 for fs in dev proc sys; do
@@ -105,7 +111,7 @@ echo "$LANG $(echo ${LANG} | cut -f 2 -d .)" >> /mnt/etc/default/libc-locales
 chroot /mnt xbps-reconfigure -f glibc-locales
 
 # Add fstab entries
-cat << EOF >> /mnt/etc/fstab
+cat << EOF > /mnt/etc/fstab
 LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0
 LABEL=boot  /boot	ext4    rw,relatime,data=ordered,discard    0 0
 LABEL=var   /var	ext4    rw,relatime,data=ordered,discard    0 0
@@ -126,6 +132,12 @@ rm -rf /mnt/var/tmp
 ln -s /tmp /mnt/var/tmp
 
 # Install grub
+cat << EOF >> /mnt/etc/default/grub
+GRUB_TERMINAL_INPUT="console"
+GRUB_TERMINAL_OUTPUT="console"
+GRUB_ENABLE_CRYPTODISK=y
+EOF
+sed -i 's/GRUB_BACKGROUND.*/#&/' /mnt/etc/default/grub
 chroot /mnt grub-install /dev/sda
 
 # Now tune the cryptsetup
@@ -134,8 +146,9 @@ KERNEL_VER=$(xbps-query -r /mnt -s linux4 | cut -f 2 -d ' ' | cut -f 1 -d -)
 mkdir -p /mnt/etc/dracut.conf.d/
 echo 'hostonly=yes' > /mnt/etc/dracut.conf.d/00-hostonly.conf
 
-LUKS_UUID="$(lsblk -o NAME,UUID | grep sda${DEVPART} | awk '{print $2}')"
-echo "GRUB_CMDLINE_LINUX=\"rd.vconsole.keymap=${KEYMAP} rd.lvm=1 rd.luks=1 rd.luks.allow-discards rd.luks.uuid=${LUKS_UUID}\"" >> /mnt/etc/default/grub
+LUKS_BOOT_UUID="$(lsblk -o NAME,UUID | grep sda${BOOTPART} | awk '{print $2}')"
+LUKS_DATA_UUID="$(lsblk -o NAME,UUID | grep sda${DEVPART} | awk '{print $2}')"
+echo "GRUB_CMDLINE_LINUX=\"rd.vconsole.keymap=${KEYMAP} rd.lvm=1 rd.luks=1 rd.luks.allow-discards rd.luks.uuid=${LUKS_BOOT_UUID} rd.luks.uuid=${LUKS_DATA_UUID}\"" >> /mnt/etc/default/grub
 
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 chroot /mnt xbps-reconfigure -f ${KERNEL_VER}
