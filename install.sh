@@ -143,9 +143,6 @@ chroot /mnt grub-install /dev/sda
 # Now tune the cryptsetup
 KERNEL_VER=$(xbps-query -r /mnt -s linux4 | cut -f 2 -d ' ' | cut -f 1 -d -)
 
-mkdir -p /mnt/etc/dracut.conf.d/
-echo 'hostonly=yes' > /mnt/etc/dracut.conf.d/00-hostonly.conf
-
 LUKS_BOOT_UUID="$(lsblk -o NAME,UUID | grep sda${BOOTPART} | awk '{print $2}')"
 LUKS_DATA_UUID="$(lsblk -o NAME,UUID | grep sda${DEVPART} | awk '{print $2}')"
 echo "GRUB_CMDLINE_LINUX=\"rd.vconsole.keymap=${KEYMAP} rd.lvm=1 rd.luks=1 rd.luks.allow-discards rd.luks.uuid=${LUKS_BOOT_UUID} rd.luks.uuid=${LUKS_DATA_UUID}\"" >> /mnt/etc/default/grub
