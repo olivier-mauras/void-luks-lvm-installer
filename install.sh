@@ -50,11 +50,11 @@ else
   DEVPART="2"
 fi
 
-echo "Encrypt /boot partition"
+echo "[!] Encrypt /boot partition"
 cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${BOOTPART}
 cryptsetup luksOpen /dev/${DEVNAME}${BOOTPART} crypt-boot
 
-echo "Encrypt data partition"
+echo "[!] Encrypt data partition"
 cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${DEVPART}
 cryptsetup luksOpen /dev/${DEVNAME}${DEVPART} crypt-pool
 
@@ -158,6 +158,7 @@ chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 chroot /mnt xbps-reconfigure -f ${KERNEL_VER}
 
 # Now add customization to installation
+echo "[!] Running custom scripts"
 if [ -d ./custom ]; then
   cp -r ./custom /mnt/tmp
 
