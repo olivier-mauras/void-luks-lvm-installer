@@ -55,11 +55,11 @@ else
 fi
 
 echo "[!] Encrypt /boot partition"
-cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${BOOTPART}
+cryptsetup ${CRYPTSETUP_OPTS} luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${BOOTPART}
 cryptsetup luksOpen /dev/${DEVNAME}${BOOTPART} crypt-boot
 
 echo "[!] Encrypt data partition"
-cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${DEVPART}
+cryptsetup ${CRYPTSETUP_OPTS} luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${DEVPART}
 cryptsetup luksOpen /dev/${DEVNAME}${DEVPART} crypt-pool
 
 # Now create VG
