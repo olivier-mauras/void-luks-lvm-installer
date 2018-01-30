@@ -81,7 +81,7 @@ if [ $UEFI ]; then
 fi
 mkfs.ext4 -L boot /dev/mapper/crypt-boot
 for FS in ${!LV[@]}; do
-  mkfs.ext4 -L $FS /dev/mapper/${VGNAME}-${FS}
+  mkfs.ext4 -L ${FS/\//_} /dev/mapper/${VGNAME}-${FS/\//_}
 done
 if [ $SWAP -eq 1 ]; then
   mkswap -L swap /dev/mapper/${VGNAME}-swap
@@ -132,7 +132,7 @@ chroot /mnt xbps-reconfigure -f glibc-locales
 echo "LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
 echo "LABEL=boot  /boot   ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
 for FS in ${!LV[@]}; do
-  echo "LABEL=${FS}  /${FS}	ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
+  echo "LABEL=${FS/\//_}  /${FS}	ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
 done
 echo "tmpfs       /tmp    tmpfs   size=1G,noexec,nodev,nosuid     0 0" >> /mnt/etc/fstab
 
