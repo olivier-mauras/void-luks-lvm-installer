@@ -69,7 +69,7 @@ cryptsetup luksOpen /dev/${DEVNAME}${DEVPART} crypt-pool
 pvcreate /dev/mapper/crypt-pool
 vgcreate ${VGNAME} /dev/mapper/crypt-pool
 for FS in ${!LV[@]}; do
-  lvcreate -L ${LV[$FS]} -n $FS ${VGNAME}
+  lvcreate -L ${LV[$FS]} -n ${FS/\//_} ${VGNAME}
 done
 if [ $SWAP -eq 1 ]; then
   lvcreate -L ${SWAPSIZE} -n swap ${VGNAME}
@@ -94,9 +94,11 @@ for dir in dev proc sys boot; do
   mkdir /mnt/${dir}
 done
 
-for FS in ${!LV[@]}; do
-  mkdir /mnt/${FS}
-  mount /dev/mapper/${VGNAME}-${FS} /mnt/${FS}
+## Remove root and sort keys
+unset LV[root]
+for FS in $(for key in "${!LV[@]}"; do printf '%s\n' "$key"; done| sort); do
+  mkdir -p /mnt/${FS}
+  mount /dev/mapper/${VGNAME}-${FS/\//_} /mnt/${FS}
 done
 
 if [ $UEFI ]; then
@@ -127,8 +129,6 @@ echo "$LANG $(echo ${LANG} | cut -f 2 -d .)" >> /mnt/etc/default/libc-locales
 chroot /mnt xbps-reconfigure -f glibc-locales
 
 # Add fstab entries
-unset LV[root]
-
 echo "LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
 echo "LABEL=boot  /boot   ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
 for FS in ${!LV[@]}; do
