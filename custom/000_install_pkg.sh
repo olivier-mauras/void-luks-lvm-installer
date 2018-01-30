@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # Install additional packages
-xbps-install -S vim
+xbps-install -y -S vim

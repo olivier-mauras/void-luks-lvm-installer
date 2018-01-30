@@ -1,2 +1,2 @@
 #!/bin/bash
-#xbps-install -S i3 i3status i3lock
+#xbps-install -y -S i3 i3status i3lock
