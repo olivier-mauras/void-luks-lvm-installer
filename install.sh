@@ -128,7 +128,7 @@ chroot /mnt xbps-reconfigure -f glibc-locales
 unset LV[root]
 
 echo "LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
-echo "LABEL=boot  /boot   ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
+echo "LABEL=boot  /boot   ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
 for FS in ${!LV[@]}; do
   echo "LABEL=${FS}  /${FS}	ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
 done
