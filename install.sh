@@ -13,9 +13,9 @@ else
   VGNAME="vgpool"
   SWAP=0
   SWAPSIZE="16G"
-  ROOTSIZE="10G"
-  VARSIZE="5G"
-  HOMESIZE="512M"
+  LV[root]="10G"
+  LV[var]="5G"
+  LV[home]="512M"
 fi
 
 # Detect if we're in UEFI or legacy mode
@@ -61,9 +61,9 @@ cryptsetup luksOpen /dev/${DEVNAME}${DEVPART} crypt-pool
 # Now create VG
 pvcreate /dev/mapper/crypt-pool
 vgcreate ${VGNAME} /dev/mapper/crypt-pool
-lvcreate -L ${ROOTSIZE} -n root ${VGNAME}
-lvcreate -L ${VARSIZE} -n var ${VGNAME}
-lvcreate -L ${HOMESIZE} -n home ${VGNAME}
+for FS in ${!LV[@]}; do
+  lvcreate -L ${LV[$FS]} -n $FS ${VGNAME}
+done
 if [ $SWAP -eq 1 ]; then
   lvcreate -L ${SWAPSIZE} -n swap ${VGNAME}
 fi
@@ -73,9 +73,9 @@ if [ $UEFI ]; then
   mkfs.vfat /dev/${DEVNAME}1
 fi
 mkfs.ext4 -L boot /dev/mapper/crypt-boot
-mkfs.ext4 -L root /dev/mapper/${VGNAME}-root
-mkfs.ext4 -L var /dev/mapper/${VGNAME}-var
-mkfs.ext4 -L home /dev/mapper/${VGNAME}-home
+for FS in ${!LV[@]}; do
+  mkfs.ext4 -L $FS /dev/mapper/${VGNAME}-${FS}
+done
 if [ $SWAP -eq 1 ]; then
   mkswap -L swap /dev/mapper/${VGNAME}-swap
 fi
@@ -83,12 +83,14 @@ fi
 
 # Mount them
 mount /dev/mapper/${VGNAME}-root /mnt
-for dir in dev proc sys boot home var; do
+for dir in dev proc sys boot; do
   mkdir /mnt/${dir}
 done
 
-mount /dev/mapper/${VGNAME}-home /mnt/home
-mount /dev/mapper/${VGNAME}-var /mnt/var
+for FS in ${!LV[@]}; do
+  mkdir /mnt/${FS}
+  mount /dev/mapper/${VGNAME}-${FS} /mnt/${FS}
+done
 
 if [ $UEFI ]; then
   mount /dev/mapper/crypt-boot /mnt/boot
@@ -118,13 +120,14 @@ echo "$LANG $(echo ${LANG} | cut -f 2 -d .)" >> /mnt/etc/default/libc-locales
 chroot /mnt xbps-reconfigure -f glibc-locales
 
 # Add fstab entries
-cat << EOF > /mnt/etc/fstab
-LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0
-LABEL=boot  /boot	ext4    rw,relatime,data=ordered,discard    0 0
-LABEL=var   /var	ext4    rw,relatime,data=ordered,discard    0 0
-LABEL=home  /home	ext4    rw,relatime,data=ordered,discard    0 0
-tmpfs       /tmp    tmpfs   size=1G,noexec,nodev,nosuid     0 0
-EOF
+unset LV[root]
+
+echo "LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
+echo "LABEL=boot  /boot   ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
+for FS in ${!LV[@]}; do
+  echo "LABEL=${FS}  /${FS}	ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
+done
+echo "tmpfs       /tmp    tmpfs   size=1G,noexec,nodev,nosuid     0 0" >> /mnt/etc/fstab
 
 if [ $UEFI ]; then
   echo "/dev/${DEVNAME}1   /boot/efi   vfat    defaults    0 0" >> /mnt/etc/fstab

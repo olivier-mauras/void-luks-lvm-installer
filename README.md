@@ -7,8 +7,10 @@ Basic install script that replaces completely the standard VoidLinux installer.
 
 - Full Disk Encryption for both `boot` and `root` partitions
 - Detects UEFI mode and creates partitions accordingly
-- Can optionally add swap
+- Set options from a config file
+- Let's you define your LVs from config file
 - Supports execution of custom scripts inside install chroot for easy customization
+- Optionally add swap
 
 ### Usage
 
