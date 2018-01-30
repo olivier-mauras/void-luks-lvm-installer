@@ -15,6 +15,7 @@ else
   LANG="en_US.UTF-8"
   DEVNAME="sda"
   VGNAME="vgpool"
+  CRYPTSETUP_OPTS=""
   SWAP=0
   SWAPSIZE="16G"
   LV[root]="10G"
