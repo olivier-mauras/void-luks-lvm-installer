@@ -27,5 +27,5 @@ cd luks-lvm-install
 Edit `config` to your taste.  
 If needed put your `.sh` scripts in custom dir - see examples - before running `install.sh`  
 ```
-sh install.sh
+./install.sh
 ```
