@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Explicitely declare our LV array
+declare -A LV
+
+# Load config or defaults
 if [ -e ./config ]; then
   . ./config
 else
