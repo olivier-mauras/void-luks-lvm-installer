@@ -22,7 +22,8 @@ Then:
 git clone http://git.mauras.ch/voidlinux/luks-lvm-install.git
 cd luks-lvm-install
 ```
-If needed put your `.sh` scripts in custom dir - see examples - before running `install.sh`
+Edit `config` to your taste.  
+If needed put your `.sh` scripts in custom dir - see examples - before running `install.sh`  
 ```
 sh install.sh
 ```

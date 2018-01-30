@@ -1,0 +1,13 @@
+PKG_LIST="base-system lvm2 cryptsetup grub"
+HOSTNAME="dom1.internal"
+KEYMAP="fr_CH"
+TIMEZONE="Europe/Zurich"
+LANG="en_US.UTF-8"
+DEVNAME="sda"
+CRYPTDEVNAME="crypt-pool"
+VGNAME="vgpool"
+SWAP=0
+SWAPSIZE="16G"
+ROOTSIZE="10G"
+VARSIZE="5G"
+HOMESIZE="512M"
