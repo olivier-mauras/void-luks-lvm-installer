@@ -4,7 +4,6 @@ KEYMAP="fr_CH"
 TIMEZONE="Europe/Zurich"
 LANG="en_US.UTF-8"
 DEVNAME="sda"
-CRYPTDEVNAME="crypt-pool"
 VGNAME="vgpool"
 SWAP=0
 SWAPSIZE="16G"

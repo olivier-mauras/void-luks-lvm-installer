@@ -10,7 +10,6 @@ else
   TIMEZONE="Europe/Zurich"
   LANG="en_US.UTF-8"
   DEVNAME="sda"
-  CRYPTDEVNAME="crypt-pool"
   VGNAME="vgpool"
   SWAP=0
   SWAPSIZE="16G"
@@ -57,11 +56,11 @@ cryptsetup luksOpen /dev/${DEVNAME}${BOOTPART} crypt-boot
 
 echo "Encrypt data partition"
 cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/${DEVNAME}${DEVPART}
-cryptsetup luksOpen /dev/${DEVNAME}${DEVPART} ${CRYPTDEVNAME}
+cryptsetup luksOpen /dev/${DEVNAME}${DEVPART} crypt-pool
 
 # Now create VG
-pvcreate /dev/mapper/${CRYPTDEVNAME}
-vgcreate ${VGNAME} /dev/mapper/${CRYPTDEVNAME}
+pvcreate /dev/mapper/crypt-pool
+vgcreate ${VGNAME} /dev/mapper/crypt-pool
 lvcreate -L ${ROOTSIZE} -n root ${VGNAME}
 lvcreate -L ${VARSIZE} -n var ${VGNAME}
 lvcreate -L ${HOMESIZE} -n home ${VGNAME}
