@@ -144,10 +144,6 @@ if [ $SWAP -eq 1 ]; then
   echo "LABEL=swap  none       swap     defaults    0 0" >> /mnt/etc/fstab
 fi
 
-# Link /var/tmp > /tmp
-rm -rf /mnt/var/tmp
-ln -s /tmp /mnt/var/tmp
-
 # Install grub
 cat << EOF >> /mnt/etc/default/grub
 GRUB_TERMINAL_INPUT="console"
