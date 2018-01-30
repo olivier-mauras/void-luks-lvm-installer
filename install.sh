@@ -131,7 +131,7 @@ chroot /mnt xbps-reconfigure -f glibc-locales
 # Add fstab entries
 echo "LABEL=root  /       ext4    rw,relatime,data=ordered,discard    0 0" > /mnt/etc/fstab
 echo "LABEL=boot  /boot   ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
-for FS in ${!LV[@]}; do
+for FS in $(for key in "${!LV[@]}"; do printf '%s\n' "$key"; done| sort); do
   echo "LABEL=${FS/\//_}  /${FS}	ext4    rw,relatime,data=ordered,discard    0 0" >> /mnt/etc/fstab
 done
 echo "tmpfs       /tmp    tmpfs   size=1G,noexec,nodev,nosuid     0 0" >> /mnt/etc/fstab
