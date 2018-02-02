@@ -37,12 +37,12 @@ dd if=/dev/zero of=/dev/${DEVNAME} bs=1M count=100
 if [ $UEFI ]; then
   parted /dev/${DEVNAME} mklabel gpt
   parted -a optimal /dev/${DEVNAME} mkpart primary 2048s 100M
-  parted -a optimal /dev/${DEVNAME} mkpart primary 100M 1100M
-  parted -a optimal /dev/${DEVNAME} mkpart primary 1100M 100%
+  parted -a optimal /dev/${DEVNAME} mkpart primary 100M 612M
+  parted -a optimal /dev/${DEVNAME} mkpart primary 612M 100%
 else
   parted /dev/${DEVNAME} mklabel msdos
-  parted -a optimal /dev/${DEVNAME} mkpart primary 2048s 1G
-  parted -a optimal /dev/${DEVNAME} mkpart primary 1G 100%
+  parted -a optimal /dev/${DEVNAME} mkpart primary 2048s 512M
+  parted -a optimal /dev/${DEVNAME} mkpart primary 512M 100%
 fi
 parted /dev/${DEVNAME} set 1 boot on
 
