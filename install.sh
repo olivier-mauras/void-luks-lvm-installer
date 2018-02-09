@@ -29,6 +29,12 @@ if [ $UEFI ]; then
   PKG_LIST="$PKG_LIST grub-x86_64-efi efibootmgr"
 fi
 
+# Detect if we're on an Intel system
+CPU_VENDOR=$(grep vendor_id /proc/cpuinfo | awk '{print $3}')
+if [ $CPU_VENDOR = "GenuineIntel" ]; then
+  PKG_LIST="$PKG_LIST intel-ucode"
+fi
+
 # Install requirements
 xbps-install -y -S -f cryptsetup parted lvm2
 
