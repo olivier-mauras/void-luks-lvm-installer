@@ -4,6 +4,7 @@
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 xbps-install -yS salt git
 
+mkdir -p /srv
 cd /srv
 git clone https://git.mauras.ch/salt/void-desktop ./salt
 cp ./salt/minion /etc/salt/minion
